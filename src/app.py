@@ -1,3 +1,5 @@
+# Expose activities for import in tests
+__all__ = ["app", "activities"]
 """
 High School Management System API
 
@@ -5,7 +7,7 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Path as FastAPIPath
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
@@ -18,6 +20,7 @@ app = FastAPI(title="Mergington High School API",
 current_dir = Path(__file__).parent
 app.mount("/static", StaticFiles(directory=os.path.join(Path(__file__).parent,
           "static")), name="static")
+
 
 # In-memory activity database
 # Added sports, artistic, and intellectual activities
@@ -81,6 +84,18 @@ activities = {
         "participants": []
     }
 }
+
+@app.post("/activities/{activity_name}/unregister")
+def unregister_from_activity(activity_name: str = FastAPIPath(...), email: str = Query(...)):
+    print(f"DEBUG: unregister_from_activity called with activity_name={activity_name}, email={email}")
+    """Remove a student from an activity"""
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    activity = activities[activity_name]
+    if email not in activity["participants"]:
+        raise HTTPException(status_code=404, detail="Student not registered for this activity")
+    activity["participants"].remove(email)
+    return {"message": f"Removed {email} from {activity_name}"}
 
 
 @app.get("/")
